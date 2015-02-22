@@ -36,6 +36,10 @@ def get_chapters(filename):
         if o is not None
     }
     indices = sorted(set(titles.keys()) & set(markers.keys()))
+    if not indices:
+        print("No indices")
+        print(repr(titles))
+        print(repr(markers))
     chapters = [
         (titles[i], markers[i][0], markers[i][1])
         for i in indices
@@ -106,11 +110,22 @@ def main():
         os.mkdir(args.output_dir)
 
     chapters = get_chapters(args.input_file)
+    if not chapters:
+        raise Exception("get_chapters returned nothing")
     full_mp3 = get_mp3(args.input_file, args.output_dir)
-    with tempfile.NamedTemporaryFile('w+') as fp:
+    delete = True
+    fp = tempfile.NamedTemporaryFile('w+', delete=False)
+    try:
         write_chapters(fp, chapters)
         subprocess.check_call(
             ('mp3splt', '-A', fp.name, '-d', args.output_dir, full_mp3))
+    except:
+        delete = False
+        print("mp3splt failed with labels in %r" % (fp.name,))
+        raise
+    finally:
+        if delete:
+            os.remove(fp.name)
     for i, data in enumerate(chapters):
         title, start, end = data
         filename = os.path.join(
