@@ -31,7 +31,7 @@ def get_chapters(filename):
         i: (o.group(1), o.group(2))
         for i, o in enumerate(
             re.match(
-                r'    Chapter #\d+\.\d+: start ([\d.]+), end ([\d.]+)', line)
+                r'    Chapter #\d+[.:]\d+: start ([\d.]+), end ([\d.]+)', line)
             for line in lines)
         if o is not None
     }
