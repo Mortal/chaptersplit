@@ -1,9 +1,37 @@
 import os
 import re
+import shutil
 import argparse
 import tempfile
 import subprocess
+import collections
 import unicodedata
+
+
+REQUIRED_PROGRAMS = {
+    'ffprobe': 'ffmpeg',
+    'ffmpeg': 'ffmpeg',
+    'lame': 'lame',
+    'mp3splt': 'mp3splt',
+    'id3tag': 'id3lib',
+}
+
+
+def check_required_programs():
+    missing = collections.defaultdict(list)
+    for program, package in REQUIRED_PROGRAMS.items():
+        path = shutil.which(program)
+        if path is None:
+            missing[package].append(program)
+
+    for package, programs in missing.items():
+        print(("Required program%s %s not found. " +
+               "Consider installing the %s package.") %
+              ('' if len(programs) == 1 else 's',
+               ', '.join(programs), package))
+
+    if missing:
+        raise SystemExit(1)
 
 
 def normalize(title):
@@ -104,7 +132,12 @@ def main():
     parser.add_argument('-a', '--artist', required=True)
     parser.add_argument('-A', '--album', required=True)
     parser.add_argument('-y', '--year', required=True)
-    args = parser.parse_args()
+    try:
+        args = parser.parse_args()
+    finally:
+        # If parse_args registers bad arguments,
+        # we still want to give an error about missing programs.
+        check_required_programs()
 
     if not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
